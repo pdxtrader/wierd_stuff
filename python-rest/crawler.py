@@ -3,6 +3,13 @@ import  datetime
 
 test_key  =  'DFC28861-D035-41E6-AE27-5CBCF871416E'
 
+
+start_of_2015 = datetime.date(2015, 1, 1)
+start_of_2016 = datetime.date(2016, 1, 1)
+start_of_2017 = datetime.date(2017, 1, 1)
+start_of_2018 = datetime.date(2018, 1, 1)
+
+
 api       = CoinAPIv1(test_key)
 exchanges = api.metadata_list_exchanges()
 assets    = api.metadata_list_assets()
@@ -15,6 +22,7 @@ current_rates = api.exchange_rates_get_all_current_rates('BTC')
 asset_ids    = []
 exchange_ids = []
 symbol_ids   = []
+period_ids   = []
 
 for asset in assets:
     asset_ids.append(asset['asset_id'])
@@ -24,6 +32,9 @@ for exchange in exchanges:
 
 for symbol in symbols:
     symbol_ids.append(symbol['symbol_id'])
+
+for period in periods:
+    period_ids.append(period['period_id'])
 
 # details(thing_id) prints short info related to the thing_id
 # finish all coinapi specific iterables like symbols, exchanges and assets etc... 
@@ -77,6 +88,18 @@ def exchange_rate(asset_1, asset_2):
     result['rate']  = exchange_rate['rate']
     return result
 
+# overload the exchange_rate function for the sake of generality
+def exchange_rate(asset_1, asset_2, date_time):
+    global api
+    date_time_iso   = date_time.isoformat()
+    result = {}
+    exchange_rate   = api.exchange_rates_get_specific_rate(asset_1, asset_2, {'time' : date_time_iso})
+    result['time']  = exchange_rate['time']
+    result['base']  = exchange_rate['asset_id_base']
+    result['quote'] = exchange_rate['asset_id_quote']
+    result['rate']  = exchange_rate['rate']
+    return result
+
 def print_exchange_rate(asset_1, asset_2):
     global api
     exchange_rate   = api.exchange_rates_get_specific_rate(asset_1, asset_2)
@@ -84,6 +107,18 @@ def print_exchange_rate(asset_1, asset_2):
     print('Base:  %s' % exchange_rate['asset_id_base'])
     print('Quote: %s' % exchange_rate['asset_id_quote'])
     print('Rate:  %s' % exchange_rate['rate'])
+    print('\n')
+
+def print_exchange_rate(asset_1, asset_2, date_time, date_time):
+    global api
+    date_time_iso   = date_time.isoformat()
+    result = {}
+    exchange_rate   = api.exchange_rates_get_specific_rate(asset_1, asset_2, {'time' : date_time_iso})
+    print('Time:  %s' % exchange_rate['time'])
+    print('Base:  %s' % exchange_rate['asset_id_base'])
+    print('Quote: %s' % exchange_rate['asset_id_quote'])
+    print('Rate:  %s' % exchange_rate['rate'])
+    print('\n')
 
 def print_periodes():
     global periods
@@ -94,6 +129,7 @@ def print_periodes():
         print('Unit count: %s' % period['unit_count'])
         print('Unit name: %s' % period['unit_name'])
         print('Display name: %s' % period['display_name'])
+        print('\n')
     
 def current_rates():
     current_rates = api.exchange_rates_get_all_current_rates('BTC')
@@ -106,6 +142,7 @@ def print_current_rates():
         print('Time: %s' % rate['time'])
         print('Quote: %s' % rate['asset_id_quote'])
         print('Rate: %s' % rate['rate'])
+        print('\n')
 
 def ohlcv_latest():
     ohlcv_latest = api.ohlcv_latest_data('BITSTAMP_SPOT_BTC_USD', {'period_id': '1MIN'})
@@ -124,7 +161,64 @@ def print_ohlcv_latest():
         print('Price high: %s' % period['price_high'])
         print('Volume traded: %s' % period['volume_traded'])
         print('Trades count: %s' % period['trades_count'])
+        print('\n')
 
+def btc_ohlcv_historical(_time_start, _period_id):
+    '''returns historical value of the bitcoin for _period_id starting from _time_start
+    @params
+    _period_id      string
+    _time_start     datetime.datetime 
+
+    @return
+    dictionary containing ohlcv data
+    '''
+    global api
+    _time_start_iso         = _time_start.isoformat()
+    return api.ohlcv_historical_data('BITSTAMP_SPOT_BTC_USD', {'period_id': _period_id, 'time_start': _time_start_iso})
+
+def btc_ohlcv_historical(_time_start, _period_id):
+    '''returns historical value of the bitcoin for _period_id starting from _time_start
+    @params
+    _period_id      string
+    _time_start     datetime.datetime 
+
+    @return
+    void
+    '''
+    global api
+    _time_start_iso         = _time_start.isoformat()
+    ohlcv_historical = api.ohlcv_historical_data('BITSTAMP_SPOT_BTC_USD', {'period_id': _period_id, 'time_start': _time_start_iso})
+    for period in ohlcv_historical:
+        print('Period start: %s' % period['time_period_start'])
+        print('Period end: %s' % period['time_period_end'])
+        print('Time open: %s' % period['time_open'])
+        print('Time close: %s' % period['time_close'])
+        print('Price open: %s' % period['price_open'])
+        print('Price close: %s' % period['price_close'])
+        print('Price low: %s' % period['price_low'])
+        print('Price high: %s' % period['price_high'])
+        print('Volume traded: %s' % period['volume_traded'])
+        print('\n')
+
+def latest_trades():
+    global api
+    return api.trades_latest_data_all()
+
+def print_latest_trades():
+    global api
+    latest_trades = api.trades_latest_data_all()
+    for data in latest_trades:
+        print('Symbol ID: %s' % data['symbol_id'])
+        print('Time Exchange: %s' % data['time_exchange'])
+        print('Time CoinAPI: %s' % data['time_coinapi'])
+        print('UUID: %s' % data['uuid'])
+        print('Price: %s' % data['price'])
+        print('Size: %s' % data['size'])
+        print('Taker Side: %s' % data['taker_side'])
+        print('\n')
+
+
+# exchange_rate function should be tested in many ways before proceeding.
 
 
 '''
@@ -153,10 +247,10 @@ print('Rate: %s' % exchange_rate_last_week['rate'])
 
 
 
-
-
 # It is meaningful to focus on this function more deeply.
 # define the following variables like start_of_2016, start_of_2017, start_of_2018, start_of_2019...
+
+
 
 start_of_2016 = datetime.date(2016, 1, 1).isoformat()
 ohlcv_historical = api.ohlcv_historical_data('BITSTAMP_SPOT_BTC_USD', {'period_id': '1MIN', 'time_start': start_of_2016})
@@ -174,15 +268,6 @@ for period in ohlcv_historical:
 
 
 
-latest_trades = api.trades_latest_data_all()
-for data in latest_trades:
-    print('Symbol ID: %s' % data['symbol_id'])
-    print('Time Exchange: %s' % data['time_exchange'])
-    print('Time CoinAPI: %s' % data['time_coinapi'])
-    print('UUID: %s' % data['uuid'])
-    print('Price: %s' % data['price'])
-    print('Size: %s' % data['size'])
-    print('Taker Side: %s' % data['taker_side'])
 
 
 
