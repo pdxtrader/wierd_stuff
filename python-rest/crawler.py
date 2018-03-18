@@ -217,7 +217,6 @@ def print_latest_trades():
         print('Taker Side: %s' % data['taker_side'])
         print('\n')
 
-
 # exchange_rate function should be tested in many ways before proceeding.
 
 
